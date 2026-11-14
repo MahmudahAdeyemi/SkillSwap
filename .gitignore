@@ -1,0 +1,37 @@
+bin/
+obj/
+*.db
+*.db-shm
+*.db-wal
+.vs/
+.idea/
+# .NET build files
+**/bin/
+**/obj/
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.user
+*.suo
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+
+# macOS
+.DS_Store
+
+# Frontend dependencies
+**/node_modules/
+**/dist/
+**/.next/
+
+# Local databases
+*.db
+*.db-shm
+*.db-wal
