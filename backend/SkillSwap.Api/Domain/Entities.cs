@@ -128,3 +128,59 @@ public static class EventWeights
         _ => 1
     };
 }
+
+public class Notification
+{
+    public long Id { get; set; }
+    public Guid UserId { get; set; }
+    public AppUser User { get; set; } = null!;
+    public NotificationType Type { get; set; }
+    public string Text { get; set; } = "";
+    public Guid? SwapId { get; set; }
+    public bool IsRead { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+public class Post
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid AuthorId { get; set; }
+    public AppUser Author { get; set; } = null!;
+    public string Category { get; set; } = "discussion";
+    public string Content { get; set; } = "";
+    public string? ImageUrl { get; set; }
+    public int LikesCount { get; set; }
+    public int CommentsCount { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public List<PostLike> Likes { get; set; } = new();
+    public List<PostComment> Comments { get; set; } = new();
+}
+
+public class PostLike
+{
+    public Guid PostId { get; set; }
+    public Post Post { get; set; } = null!;
+    public Guid UserId { get; set; }
+    public AppUser User { get; set; } = null!;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+public class PostComment
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid PostId { get; set; }
+    public Post Post { get; set; } = null!;
+    public Guid AuthorId { get; set; }
+    public AppUser Author { get; set; } = null!;
+    public string Content { get; set; } = "";
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+public class Follow
+{
+    public Guid FollowerId { get; set; }
+    public AppUser Follower { get; set; } = null!;
+    public Guid FollowingId { get; set; }
+    public AppUser Following { get; set; } = null!;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}

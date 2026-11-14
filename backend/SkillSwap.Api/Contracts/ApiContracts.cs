@@ -80,7 +80,8 @@ namespace SkillSwap.Contracts;
 // ---------------------------------------------------------------------
 // ENUMS
 // ---------------------------------------------------------------------
-public enum SkillType     { Offering, Wanted }
+public enum 
+    SkillType     { Offering, Wanted }
 public enum SkillLevel    { Beginner, Intermediate, Advanced }
 public enum MatchKind     { Mutual, Partial, Chain }
 public enum SwapStatus    { Proposed, Active, Completed, Declined, Cancelled }
@@ -143,7 +144,8 @@ public record UpdateProfileRequest(
 public record PublicProfileDto(
     UserDto User,
     List<UserSkillDto> Offering,
-    List<UserSkillDto> Wanted);
+    List<UserSkillDto> Wanted,
+    bool IsFollowing);
 
 // Cold start: user picks interests when they first sign up.
 public record OnboardingRequest(
@@ -338,6 +340,35 @@ public record ImpactStatsDto(
     List<SkillCountDto> TopSkills);
 
 public record SkillCountDto(string Skill, int Count);
+
+// ---------------------------------------------------------------------
+// COMMUNITY POSTS
+// ---------------------------------------------------------------------
+public record CreatePostRequest(
+    [property: Required, StringLength(50)] string Category,
+    [property: Required, StringLength(4000, MinimumLength = 1)] string Content,
+    [property: StringLength(500)] string? ImageUrl);
+
+public record CommunityPostDto(
+    Guid Id,
+    UserDto Author,
+    string Category,
+    string Content,
+    string? ImageUrl,
+    int LikesCount,
+    int CommentsCount,
+    bool IsLikedByMe,
+    DateTime CreatedAt);
+
+public record CreatePostCommentRequest(
+    [property: Required, StringLength(2000, MinimumLength = 1)] string Content);
+
+public record PostCommentDto(
+    Guid Id,
+    Guid PostId,
+    UserDto Author,
+    string Content,
+    DateTime CreatedAt);
 
 // =====================================================================
 //  BUSINESS RULES TO ENFORCE SERVER-SIDE

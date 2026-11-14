@@ -165,6 +165,57 @@ public static class SeedData
         Evt(EventType.ViewProfile, "Figma", "ibrahim", null, 1);
         Evt(EventType.Search, "Photography", null, "Photography", 0.5);
 
+        if (!await db.Posts.AnyAsync())
+        {
+            db.Posts.AddRange(
+                new Post
+                {
+                    AuthorId = Id("ada"),
+                    Category = "project",
+                    Content = "Just wrapped a 3-week design system sprint with @david_chen! I built the Figma token library while he walked me through accessible React primitives.",
+                    ImageUrl = "https://images.unsplash.com/photo-1558655146-9f40138edfeb?auto=format&fit=crop&w=900&q=80",
+                    LikesCount = 48,
+                    CommentsCount = 12,
+                    CreatedAt = now.AddHours(-2)
+                },
+                new Post
+                {
+                    AuthorId = Id("tunde"),
+                    Category = "question",
+                    Content = "Best way to structure a 30-minute live code review swap?\nI'm pairing with a backend engineer next week. Should we split 15/15 or alternate full sessions each week?",
+                    LikesCount = 29,
+                    CommentsCount = 19,
+                    CreatedAt = now.AddHours(-4)
+                },
+                new Post
+                {
+                    AuthorId = Id("chioma"),
+                    Category = "tutorial",
+                    Content = "5-minute SQL window functions cheat sheet for product designers.\nPut together a quick visual guide on ROW_NUMBER and LAG so you can pull your own retention cohorts without waiting on analytics.",
+                    LikesCount = 94,
+                    CommentsCount = 24,
+                    CreatedAt = now.AddHours(-6)
+                },
+                new Post
+                {
+                    AuthorId = Id("emeka"),
+                    Category = "opportunity",
+                    Content = "Looking for 2 partners to join a weekend mobile app buildathon. I can teach React Native & TypeScript; looking to learn Rive animations!",
+                    LikesCount = 15,
+                    CommentsCount = 4,
+                    CreatedAt = now.AddDays(-1)
+                },
+                new Post
+                {
+                    AuthorId = Id("ada"),
+                    Category = "discussion",
+                    Content = "What skill surprised you the most to teach someone else?\nTeaching Figma auto-layout to a backend developer actually made me rethink how I name my own components.",
+                    LikesCount = 63,
+                    CommentsCount = 31,
+                    CreatedAt = now.AddDays(-2)
+                });
+        }
+
         await db.SaveChangesAsync();
     }
 }

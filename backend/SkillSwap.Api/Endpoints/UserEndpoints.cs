@@ -9,18 +9,50 @@ public static class UserEndpoints
         var g = app.MapGroup("/api/users").WithTags("Users").RequireAuthorization();
 
         // ---------- Profiles ----------
-        g.MapGet("/{id:guid}", async (Guid id, AppDbContext db, UserMapper mapper) =>
+        g.MapGet("/{id:guid}", async (Guid id, ClaimsPrincipal p, AppDbContext db, UserMapper mapper) =>
         {
             var user = await mapper.GetAsync(id);
             if (user is null) return Results.NotFound();
 
+            var me = p.GetUserId();
             var skills = await db.UserSkills.AsNoTracking()
                 .Include(x => x.Skill).Where(x => x.UserId == id).ToListAsync();
+            var isFollowing = await db.Follows.AsNoTracking()
+                .AnyAsync(f => f.FollowerId == me && f.FollowingId == id);
 
             return Results.Ok(new PublicProfileDto(
                 user,
                 skills.Where(x => x.Type == SkillType.Offering).Select(x => x.ToDto()).ToList(),
-                skills.Where(x => x.Type == SkillType.Wanted).Select(x => x.ToDto()).ToList()));
+                skills.Where(x => x.Type == SkillType.Wanted).Select(x => x.ToDto()).ToList(),
+                isFollowing));
+        });
+
+        g.MapPost("/{id:guid}/follow", async (Guid id, ClaimsPrincipal p, AppDbContext db) =>
+        {
+            var me = p.GetUserId();
+            if (id == me)
+                return Results.Problem(statusCode: 422, title: "You can't follow yourself.");
+            if (!await db.Users.AnyAsync(u => u.Id == id))
+                return Results.Problem(statusCode: 404, title: "Member not found.");
+
+            if (!await db.Follows.AnyAsync(f => f.FollowerId == me && f.FollowingId == id))
+            {
+                db.Follows.Add(new Follow { FollowerId = me, FollowingId = id });
+                await db.SaveChangesAsync();
+            }
+            return Results.NoContent();
+        });
+
+        g.MapDelete("/{id:guid}/follow", async (Guid id, ClaimsPrincipal p, AppDbContext db) =>
+        {
+            var me = p.GetUserId();
+            var follow = await db.Follows.FindAsync(me, id);
+            if (follow is not null)
+            {
+                db.Follows.Remove(follow);
+                await db.SaveChangesAsync();
+            }
+            return Results.NoContent();
         });
 
         g.MapPut("/me", async (UpdateProfileRequest req, ClaimsPrincipal p, AppDbContext db, UserMapper mapper) =>

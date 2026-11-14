@@ -4,12 +4,24 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.SignalR;
+using SkillSwap.Api.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 var cfg = builder.Configuration;
 
 // ---------- Database ----------
-builder.Services.AddDbContext<AppDbContext>(o => o.UseNpgsql(cfg.GetConnectionString("Default")));
+var connStr = cfg.GetConnectionString("Default") ?? "Data Source=skillswap.db";
+var isSqlite = connStr.Contains(".db", StringComparison.OrdinalIgnoreCase) ||
+               connStr.Contains("Data Source", StringComparison.OrdinalIgnoreCase);
+
+builder.Services.AddDbContext<AppDbContext>(o =>
+{
+    if (isSqlite)
+        o.UseSqlite(connStr);
+    else
+        o.UseNpgsql(connStr);
+});
 
 // ---------- Identity + JWT ----------
 builder.Services
@@ -54,6 +66,10 @@ builder.Services
     });
 builder.Services.AddAuthorization();
 
+// ---------- Real-time chat ----------
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<IUserIdProvider, SubUserIdProvider>();
+
 // ---------- App services ----------
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<UserMapper>();
@@ -95,12 +111,19 @@ builder.Services.AddProblemDetails();
 
 var app = builder.Build();
 
-// Apply pending EF Core migrations, then seed the skill catalog
+// Apply pending EF Core migrations or ensure created for SQLite, then seed the skill catalog
 // (and demo users only if Seed:DemoUsers is true in appsettings).
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await db.Database.MigrateAsync();
+    if (isSqlite)
+    {
+        await db.Database.EnsureCreatedAsync();
+    }
+    else
+    {
+        await db.Database.MigrateAsync();
+    }
     await SeedData.RunAsync(scope.ServiceProvider, cfg.GetValue<bool>("Seed:DemoUsers"));
 }
 
@@ -118,5 +141,12 @@ app.MapUsers();
 app.MapEvents();
 app.MapMatches();
 app.MapSwaps();
+app.MapDiscover();
+app.MapSessions();
+app.MapNotifications();
+app.MapImpact();
+app.MapPosts();
+app.MapSearch();
+app.MapHub<ChatHub>("/hubs/chat");
 
 app.Run();

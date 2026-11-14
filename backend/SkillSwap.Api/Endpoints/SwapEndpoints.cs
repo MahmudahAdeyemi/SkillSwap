@@ -188,6 +188,104 @@ public static class SwapEndpoints
             await db.SaveChangesAsync();
             return Results.Ok(await mapper.ToDtoAsync(swap));
         });
+
+        // ---------- Chat Messages ----------
+        g.MapGet("/{id:guid}/messages", async (Guid id, ClaimsPrincipal p, AppDbContext db, int limit = 50, DateTime? before = null) =>
+        {
+            var me = p.GetUserId();
+            var (swap, error) = await SwapRules.LoadForParticipantAsync(db, id, me);
+            if (error is not null) return error;
+
+            limit = Math.Clamp(limit, 1, 100);
+            var q = db.Messages.AsNoTracking().Where(m => m.SwapId == id);
+            if (before.HasValue)
+                q = q.Where(m => m.SentAt < before.Value);
+
+            var messages = await q.OrderByDescending(m => m.SentAt)
+                .Take(limit)
+                .Select(m => new MessageDto(m.Id, m.SwapId, m.SenderId, m.Text, m.SentAt))
+                .ToListAsync();
+
+            messages.Reverse();
+            return Results.Ok(messages);
+        });
+
+        g.MapPost("/{id:guid}/messages", async (Guid id, SendMessageRequest req, ClaimsPrincipal p, AppDbContext db) =>
+        {
+            var me = p.GetUserId();
+            var (swap, error) = await SwapRules.LoadForParticipantAsync(db, id, me);
+            if (error is not null) return error;
+
+            if (swap!.Status != SwapStatus.Active)
+                return Results.Problem(statusCode: 409, title: "You can only message in an Active swap.");
+
+            var message = new Message
+            {
+                SwapId = id,
+                SenderId = me,
+                Text = req.Text.Trim(),
+                SentAt = DateTime.UtcNow
+            };
+            db.Messages.Add(message);
+
+            var partnerId = swap.ProposerId == me ? swap.ReceiverId : swap.ProposerId;
+            db.Notifications.Add(new Notification
+            {
+                UserId = partnerId,
+                Type = NotificationType.NewMessage,
+                Text = "New message in your swap",
+                SwapId = id,
+                IsRead = false
+            });
+
+            await db.SaveChangesAsync();
+            return Results.Created($"/api/swaps/{id}/messages/{message.Id}",
+                new MessageDto(message.Id, message.SwapId, message.SenderId, message.Text, message.SentAt));
+        })
+        .Validate<SendMessageRequest>();
+
+        // ---------- Reviews ----------
+        g.MapPost("/{id:guid}/reviews", async (Guid id, CreateReviewRequest req, ClaimsPrincipal p, AppDbContext db, UserMapper mapper) =>
+        {
+            var me = p.GetUserId();
+            var (swap, error) = await SwapRules.LoadForParticipantAsync(db, id, me);
+            if (error is not null) return error;
+
+            if (swap!.Status != SwapStatus.Completed)
+                return Results.Problem(statusCode: 409, title: "Only a Completed swap can be reviewed.");
+
+            if (await db.Reviews.AnyAsync(r => r.SwapId == id && r.ReviewerId == me))
+                return Results.Problem(statusCode: 409, title: "You already reviewed this swap.");
+
+            var revieweeId = swap.ProposerId == me ? swap.ReceiverId : swap.ProposerId;
+
+            var review = new Review
+            {
+                SwapId = id,
+                ReviewerId = me,
+                RevieweeId = revieweeId,
+                Rating = req.Rating,
+                Comment = req.Comment?.Trim(),
+                CreatedAt = DateTime.UtcNow
+            };
+            db.Reviews.Add(review);
+
+            db.Notifications.Add(new Notification
+            {
+                UserId = revieweeId,
+                Type = NotificationType.ReviewReceived,
+                Text = $"You received a {req.Rating}-star review!",
+                SwapId = id,
+                IsRead = false
+            });
+
+            await db.SaveChangesAsync();
+
+            var reviewerDto = (await mapper.GetAsync(me))!;
+            return Results.Created($"/api/swaps/{id}/reviews/{review.Id}",
+                new ReviewDto(review.Id, review.SwapId, reviewerDto, review.Rating, review.Comment, review.CreatedAt));
+        })
+        .Validate<CreateReviewRequest>();
     }
 }
 

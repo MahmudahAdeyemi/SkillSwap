@@ -310,6 +310,97 @@ namespace SkillSwap.Api.Migrations
                     b.ToTable("Messages");
                 });
 
+            modelBuilder.Entity("SkillSwap.Api.Domain.Notification", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("SwapId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "CreatedAt");
+
+                    b.ToTable("Notifications");
+                });
+
+            modelBuilder.Entity("SkillSwap.Api.Domain.Post", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AuthorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("CommentsCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("text");
+
+                    b.Property<int>("LikesCount")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AuthorId");
+
+                    b.HasIndex("Category", "CreatedAt");
+
+                    b.ToTable("Posts");
+                });
+
+            modelBuilder.Entity("SkillSwap.Api.Domain.PostLike", b =>
+                {
+                    b.Property<Guid>("PostId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("PostId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("PostLikes");
+                });
+
             modelBuilder.Entity("SkillSwap.Api.Domain.Review", b =>
                 {
                     b.Property<Guid>("Id")
@@ -599,6 +690,47 @@ namespace SkillSwap.Api.Migrations
                     b.Navigation("Swap");
                 });
 
+            modelBuilder.Entity("SkillSwap.Api.Domain.Notification", b =>
+                {
+                    b.HasOne("SkillSwap.Api.Domain.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SkillSwap.Api.Domain.Post", b =>
+                {
+                    b.HasOne("SkillSwap.Api.Domain.AppUser", "Author")
+                        .WithMany()
+                        .HasForeignKey("AuthorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Author");
+                });
+
+            modelBuilder.Entity("SkillSwap.Api.Domain.PostLike", b =>
+                {
+                    b.HasOne("SkillSwap.Api.Domain.Post", "Post")
+                        .WithMany("Likes")
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SkillSwap.Api.Domain.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Post");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("SkillSwap.Api.Domain.Review", b =>
                 {
                     b.HasOne("SkillSwap.Api.Domain.AppUser", "Reviewee")
@@ -683,6 +815,11 @@ namespace SkillSwap.Api.Migrations
             modelBuilder.Entity("SkillSwap.Api.Domain.AppUser", b =>
                 {
                     b.Navigation("Skills");
+                });
+
+            modelBuilder.Entity("SkillSwap.Api.Domain.Post", b =>
+                {
+                    b.Navigation("Likes");
                 });
 
             modelBuilder.Entity("SkillSwap.Api.Domain.Swap", b =>

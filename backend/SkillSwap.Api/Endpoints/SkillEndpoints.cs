@@ -40,6 +40,77 @@ public static class SkillEndpoints
             Results.Ok(await db.Skills.Select(s => s.Category).Distinct().OrderBy(c => c).ToListAsync()))
         .AllowAnonymous();
 
+        // GET /api/skills/{id} - everything the Skill Details screen needs.
+        g.MapGet("/{id:int}", async (int id, AppDbContext db, UserMapper mapper) =>
+        {
+            var skill = await db.Skills.AsNoTracking().FirstOrDefaultAsync(s => s.Id == id);
+            if (skill is null) return Results.NotFound();
+
+            var teacherIds = await db.UserSkills.AsNoTracking()
+                .Where(x => x.SkillId == id && x.Type == SkillType.Offering)
+                .Select(x => x.UserId)
+                .Distinct()
+                .ToListAsync();
+
+            var learnerIds = await db.UserSkills.AsNoTracking()
+                .Where(x => x.SkillId == id && x.Type == SkillType.Wanted)
+                .Select(x => x.UserId)
+                .Distinct()
+                .ToListAsync();
+
+            var wantedCount = await db.UserSkills.CountAsync(x => x.SkillId == id && x.Type == SkillType.Wanted);
+
+            var userMap = await mapper.GetManyAsync(teacherIds.Concat(learnerIds));
+            var teachers = teacherIds
+                .Where(userMap.ContainsKey)
+                .Select(id => userMap[id])
+                .OrderByDescending(u => u.AverageRating)
+                .ThenByDescending(u => u.CompletedSwaps)
+                .Take(8)
+                .ToList();
+            var learners = learnerIds
+                .Where(userMap.ContainsKey)
+                .Select(id => userMap[id])
+                .OrderByDescending(u => u.JoinedAt)
+                .Take(8)
+                .ToList();
+
+            var related = await db.Skills.AsNoTracking()
+                .Where(s => s.Category == skill.Category && s.Id != skill.Id)
+                .OrderBy(s => s.Name)
+                .Take(8)
+                .Select(s => s.ToDto())
+                .ToListAsync();
+
+            var post = await db.Posts.AsNoTracking()
+                .Where(p => p.Content.ToLower().Contains(skill.Name.ToLower()))
+                .OrderByDescending(p => p.CreatedAt)
+                .FirstOrDefaultAsync();
+            post ??= await db.Posts.AsNoTracking()
+                .OrderByDescending(p => p.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            CommunityPostDto? discussion = null;
+            if (post is not null)
+            {
+                var author = await mapper.GetAsync(post.AuthorId);
+                if (author is not null)
+                    discussion = new CommunityPostDto(post.Id, author, post.Category, post.Content,
+                        post.ImageUrl, post.LikesCount, post.CommentsCount, false, post.CreatedAt);
+            }
+
+            return Results.Ok(new SkillDetailDto(
+                skill.ToDto(),
+                teacherIds.Count,
+                learnerIds.Count,
+                wantedCount,
+                teachers,
+                learners,
+                related,
+                discussion));
+        })
+        .AllowAnonymous();
+
         g.MapPost("", async (CreateSkillRequest req, AppDbContext db) =>
         {
             var name = req.Name.Trim();

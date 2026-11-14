@@ -13,6 +13,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<LessonSession> Sessions => Set<LessonSession>();
     public DbSet<Review> Reviews => Set<Review>();
     public DbSet<UserEvent> UserEvents => Set<UserEvent>();
+    public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<Post> Posts => Set<Post>();
+    public DbSet<PostLike> PostLikes => Set<PostLike>();
+    public DbSet<PostComment> PostComments => Set<PostComment>();
+    public DbSet<Follow> Follows => Set<Follow>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -78,6 +83,42 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             e.Property(x => x.Type).HasConversion<string>();
             e.HasIndex(x => new { x.UserId, x.CreatedAt });
             e.HasIndex(x => new { x.SkillId, x.CreatedAt });   // for "trending" later
+        });
+
+        b.Entity<Notification>(e =>
+        {
+            e.Property(x => x.Type).HasConversion<string>();
+            e.HasIndex(x => new { x.UserId, x.CreatedAt });
+            e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<Post>(e =>
+        {
+            e.HasIndex(x => new { x.Category, x.CreatedAt });
+            e.HasOne(x => x.Author).WithMany().HasForeignKey(x => x.AuthorId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<PostLike>(e =>
+        {
+            e.HasKey(x => new { x.PostId, x.UserId });
+            e.HasOne(x => x.Post).WithMany(p => p.Likes).HasForeignKey(x => x.PostId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<PostComment>(e =>
+        {
+            e.HasIndex(x => new { x.PostId, x.CreatedAt });
+            e.Property(x => x.Content).HasMaxLength(2000);
+            e.HasOne(x => x.Post).WithMany(p => p.Comments).HasForeignKey(x => x.PostId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Author).WithMany().HasForeignKey(x => x.AuthorId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<Follow>(e =>
+        {
+            e.HasKey(x => new { x.FollowerId, x.FollowingId });
+            e.HasIndex(x => x.FollowingId);
+            e.HasOne(x => x.Follower).WithMany().HasForeignKey(x => x.FollowerId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Following).WithMany().HasForeignKey(x => x.FollowingId).OnDelete(DeleteBehavior.Restrict);
         });
     }
 }
