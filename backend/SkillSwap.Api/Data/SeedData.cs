@@ -167,53 +167,139 @@ public static class SeedData
 
         if (!await db.Posts.AnyAsync())
         {
-            db.Posts.AddRange(
-                new Post
+            var designSprint = new Post
+            {
+                AuthorId = Id("ada"),
+                Category = "project",
+                Content = "Just wrapped a 3-week design system sprint with @david_chen! I built the Figma token library while he walked me through accessible React primitives.",
+                ImageUrl = "https://images.unsplash.com/photo-1558655146-9f40138edfeb?auto=format&fit=crop&w=900&q=80",
+                LikesCount = 48,
+                CommentsCount = 2,
+                CreatedAt = now.AddHours(-2)
+            };
+            var codeReview = new Post
+            {
+                AuthorId = Id("tunde"),
+                Category = "question",
+                Content = "Best way to structure a 30-minute live code review swap?\nI'm pairing with a backend engineer next week. Should we split 15/15 or alternate full sessions each week?",
+                LikesCount = 29,
+                CommentsCount = 3,
+                CreatedAt = now.AddHours(-4)
+            };
+            var sqlCheatSheet = new Post
+            {
+                AuthorId = Id("chioma"),
+                Category = "tutorial",
+                Content = "5-minute SQL window functions cheat sheet for product designers.\nPut together a quick visual guide on ROW_NUMBER and LAG so you can pull your own retention cohorts without waiting on analytics.",
+                LikesCount = 94,
+                CommentsCount = 2,
+                CreatedAt = now.AddHours(-6)
+            };
+            var buildathon = new Post
+            {
+                AuthorId = Id("emeka"),
+                Category = "opportunity",
+                Content = "Looking for 2 partners to join a weekend mobile app buildathon. I can teach React Native & TypeScript; looking to learn Rive animations!",
+                LikesCount = 15,
+                CommentsCount = 2,
+                CreatedAt = now.AddDays(-1)
+            };
+            var teachingSurprise = new Post
+            {
+                AuthorId = Id("ada"),
+                Category = "discussion",
+                Content = "What skill surprised you the most to teach someone else?\nTeaching Figma auto-layout to a backend developer actually made me rethink how I name my own components.",
+                LikesCount = 63,
+                CommentsCount = 3,
+                CreatedAt = now.AddDays(-2)
+            };
+
+            db.Posts.AddRange(designSprint, codeReview, sqlCheatSheet, buildathon, teachingSurprise);
+
+            db.PostComments.AddRange(
+                new PostComment
                 {
-                    AuthorId = Id("ada"),
-                    Category = "project",
-                    Content = "Just wrapped a 3-week design system sprint with @david_chen! I built the Figma token library while he walked me through accessible React primitives.",
-                    ImageUrl = "https://images.unsplash.com/photo-1558655146-9f40138edfeb?auto=format&fit=crop&w=900&q=80",
-                    LikesCount = 48,
-                    CommentsCount = 12,
+                    PostId = designSprint.Id, AuthorId = Id("tunde"),
+                    Content = "The token library looks clean. How did you handle dark mode variants?",
+                    CreatedAt = now.AddHours(-1)
+                },
+                new PostComment
+                {
+                    PostId = designSprint.Id, AuthorId = Id("amaka"),
+                    Content = "This is the kind of swap story I want to see more of.",
+                    CreatedAt = now.AddMinutes(-45)
+                },
+                new PostComment
+                {
+                    PostId = codeReview.Id, AuthorId = Id("emeka"),
+                    Content = "I would alternate full sessions. It gives each person enough context to review properly.",
+                    CreatedAt = now.AddHours(-3)
+                },
+                new PostComment
+                {
+                    PostId = codeReview.Id, AuthorId = Id("chioma"),
+                    Content = "Try 10 minutes of context, then 20 minutes of review. Works well for us.",
                     CreatedAt = now.AddHours(-2)
                 },
-                new Post
+                new PostComment
                 {
-                    AuthorId = Id("tunde"),
-                    Category = "question",
-                    Content = "Best way to structure a 30-minute live code review swap?\nI'm pairing with a backend engineer next week. Should we split 15/15 or alternate full sessions each week?",
-                    LikesCount = 29,
-                    CommentsCount = 19,
+                    PostId = codeReview.Id, AuthorId = Id("ada"),
+                    Content = "Saving this thread. I have the same pairing session next week.",
+                    CreatedAt = now.AddHours(-1)
+                },
+                new PostComment
+                {
+                    PostId = sqlCheatSheet.Id, AuthorId = Id("kunle"),
+                    Content = "This is perfect. I can share it with my product team tomorrow.",
+                    CreatedAt = now.AddHours(-5)
+                },
+                new PostComment
+                {
+                    PostId = sqlCheatSheet.Id, AuthorId = Id("ibrahim"),
+                    Content = "The visual examples make window functions much easier to follow.",
                     CreatedAt = now.AddHours(-4)
                 },
-                new Post
+                new PostComment
                 {
-                    AuthorId = Id("chioma"),
-                    Category = "tutorial",
-                    Content = "5-minute SQL window functions cheat sheet for product designers.\nPut together a quick visual guide on ROW_NUMBER and LAG so you can pull your own retention cohorts without waiting on analytics.",
-                    LikesCount = 94,
-                    CommentsCount = 24,
-                    CreatedAt = now.AddHours(-6)
+                    PostId = buildathon.Id, AuthorId = Id("david"),
+                    Content = "I can help with backend work if you still need a partner.",
+                    CreatedAt = now.AddHours(-20)
                 },
-                new Post
+                new PostComment
                 {
-                    AuthorId = Id("emeka"),
-                    Category = "opportunity",
-                    Content = "Looking for 2 partners to join a weekend mobile app buildathon. I can teach React Native & TypeScript; looking to learn Rive animations!",
-                    LikesCount = 15,
-                    CommentsCount = 4,
-                    CreatedAt = now.AddDays(-1)
+                    PostId = buildathon.Id, AuthorId = Id("peter"),
+                    Content = "I am learning React Native now. Would love to join and contribute.",
+                    CreatedAt = now.AddHours(-16)
                 },
-                new Post
+                new PostComment
                 {
-                    AuthorId = Id("ada"),
-                    Category = "discussion",
-                    Content = "What skill surprised you the most to teach someone else?\nTeaching Figma auto-layout to a backend developer actually made me rethink how I name my own components.",
-                    LikesCount = 63,
-                    CommentsCount = 31,
-                    CreatedAt = now.AddDays(-2)
+                    PostId = teachingSurprise.Id, AuthorId = Id("ngozi"),
+                    Content = "Teaching guitar made me much better at listening carefully.",
+                    CreatedAt = now.AddDays(-2).AddHours(2)
+                },
+                new PostComment
+                {
+                    PostId = teachingSurprise.Id, AuthorId = Id("seyi"),
+                    Content = "Explaining marketing funnels to my partner clarified my own process.",
+                    CreatedAt = now.AddDays(-2).AddHours(5)
+                },
+                new PostComment
+                {
+                    PostId = teachingSurprise.Id, AuthorId = Id("fatima"),
+                    Content = "Teaching someone to cook makes you slow down and explain the small details.",
+                    CreatedAt = now.AddDays(-1).AddHours(-5)
                 });
+        }
+
+        if (!await db.Follows.AnyAsync())
+        {
+            db.Follows.AddRange(
+                new Follow { FollowerId = Id("ada"), FollowingId = Id("tunde"), CreatedAt = now.AddDays(-12) },
+                new Follow { FollowerId = Id("ada"), FollowingId = Id("chioma"), CreatedAt = now.AddDays(-10) },
+                new Follow { FollowerId = Id("ada"), FollowingId = Id("amaka"), CreatedAt = now.AddDays(-8) },
+                new Follow { FollowerId = Id("ada"), FollowingId = Id("emeka"), CreatedAt = now.AddDays(-6) },
+                new Follow { FollowerId = Id("tunde"), FollowingId = Id("ada"), CreatedAt = now.AddDays(-9) },
+                new Follow { FollowerId = Id("chioma"), FollowingId = Id("ada"), CreatedAt = now.AddDays(-7) });
         }
 
         await db.SaveChangesAsync();

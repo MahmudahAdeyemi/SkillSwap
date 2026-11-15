@@ -35,7 +35,7 @@ public static class SearchEndpoints
             var teacherUsers = await mapper.GetManyAsync(teacherIds.Select(x => x.UserId));
             var skillDtos = skills.ToDictionary(s => s.Id, s => s.ToDto());
 
-            var people = teacherIds
+            var skillPeople = teacherIds
                 .GroupBy(x => x.UserId)
                 .Where(g => teacherUsers.ContainsKey(g.Key))
                 .Select(g => new MatchDto(
@@ -48,6 +48,28 @@ public static class SearchEndpoints
                         .Distinct()
                         .ToList(),
                     []))
+                .ToList();
+
+            // People whose name, bio, or location matches the query — not only people
+            // who teach a matching skill.
+            var namedIds = await db.Users.AsNoTracking()
+                .Where(u => (!me.HasValue || u.Id != me.Value) &&
+                            (u.Name.ToLower().Contains(text) ||
+                             (u.Bio != null && u.Bio.ToLower().Contains(text)) ||
+                             (u.Location != null && u.Location.ToLower().Contains(text))))
+                .OrderBy(u => u.Name)
+                .Take(12)
+                .Select(u => u.Id)
+                .ToListAsync();
+            var namedUsers = await mapper.GetManyAsync(namedIds);
+            var existingIds = skillPeople.Select(m => m.User.Id).ToHashSet();
+            var nameMatches = namedIds
+                .Where(id => !existingIds.Contains(id) && namedUsers.ContainsKey(id))
+                .Select(id => new MatchDto(namedUsers[id], MatchKind.Partial, 50, [], []))
+                .ToList();
+
+            var people = skillPeople
+                .Concat(nameMatches)
                 .OrderByDescending(m => m.User.AverageRating)
                 .ThenByDescending(m => m.Score)
                 .Take(12)
